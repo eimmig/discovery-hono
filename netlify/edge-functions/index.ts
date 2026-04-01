@@ -12,6 +12,13 @@ import { isBoolean, isNonEmptyString, parseJsonBody } from './lib/http-utils.ts'
 
 const app = new Hono()
 
+app.use('*', async (c, next) => {
+  // Marker headers to verify requests are served by this Edge Function.
+  c.header('x-edge-function', 'index')
+  c.header('x-edge-runtime', 'netlify-edge')
+  await next()
+})
+
 app.get('/', (c) => {
   return c.html(homePageHtml())
 })
@@ -91,7 +98,7 @@ app.put('/tasks/:id', async (c) => {
   }
 
   const updatedTask = updateTask(currentTask, {
-    title: payload.title !== undefined ? payload.title.trim() : undefined,
+    title: payload.title === undefined ? undefined : payload.title.trim(),
     done: payload.done,
   })
 
