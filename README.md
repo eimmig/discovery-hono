@@ -47,9 +47,12 @@ cd crud-test
 
 ### 2) Configurar roteamento da Edge Function
 
-No arquivo `netlify.toml`, configure todas as rotas para a edge function `index`:
+No arquivo `netlify.toml`, configure o diretorio de publish e roteie todas as rotas para a edge function `index`:
 
 ```toml
+[build]
+  publish = "."
+
 [[edge_functions]]
   function = "index"
   path = "/*"
@@ -152,6 +155,40 @@ Fluxo:
 2. O Hono faz o matching da rota e executa o handler.
 3. O CRUD opera em um `Map` na memoria do processo.
 4. A resposta volta em JSON com codigos HTTP adequados (200, 201, 404, 422).
+
+## Como funciona o netlify.toml neste projeto
+
+Arquivo atual:
+
+```toml
+[build]
+  publish = "."
+
+[[edge_functions]]
+  function = "index"
+  path = "/*"
+```
+
+O que cada parte faz:
+
+- `[build]`: define configuracoes de build/deploy do site.
+- `publish = "."`: diz para a Netlify publicar a raiz do repositorio, evitando erro de pasta inexistente como `dist`.
+- `[[edge_functions]]`: declara uma edge function configurada para roteamento.
+- `function = "index"`: aponta para a funcao `index` em `netlify/edge-functions/index.ts`.
+- `path = "/*"`: envia todas as rotas para essa Edge Function.
+
+Ordem de prioridade (importante):
+
+1. Se houver valor configurado manualmente no painel da Netlify para build/publish, ele pode sobrescrever o arquivo.
+2. Quando o arquivo for usado, o deploy log costuma mostrar `publishOrigin: config`.
+3. Quando a UI estiver sobrescrevendo, o log mostra `publishOrigin: ui`.
+
+Como validar no deploy log:
+
+1. Abrir o deploy.
+2. Ver a secao `Resolved config`.
+3. Confirmar que `publish` aponta para a raiz (`/opt/build/repo`) e nao para `dist`.
+4. Conferir `edge_functions` apontando para `netlify/edge-functions`.
 
 ## Deploy na Netlify para testar online
 
