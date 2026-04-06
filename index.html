@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hono 🔥 — Framework Ultrarrápido para Edge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ──────────────────────────────────────── */
+    :root {
+      --bg:       #0d1117;
+      --surface:  #161b22;
+      --card:     #21262d;
+      --border:   #30363d;
+      --text:     #e6edf3;
+      --muted:    #8b949e;
+      --orange:   #f97316;
+      --orange-l: #fb923c;
+      --green:    #3fb950;
+      --blue:     #58a6ff;
+      --purple:   #bc8cff;
+      --red:      #ff7b72;
+      --yellow:   #e3b341;
+      --font:     'Inter', system-ui, -apple-system, sans-serif;
+      --mono:     'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      overflow: hidden;
+    }
+
+    /* ── Slides ─────────────────────────────────────────────── */
+    .slide {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 4rem 2rem 5rem;
+      position: relative;
+    }
+    .slide.active { display: flex; }
+
+    .slide-inner {
+      width: 100%;
+      max-width: 1060px;
+      animation: fadeIn 0.25s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.8; transform: scale(1.08); }
+    }
+
+    /* ── Top progress bar ───────────────────────────────────── */
+    #top-bar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 3px;
+      background: var(--orange);
+      transition: width 0.3s ease;
+      z-index: 200;
+    }
+
+    /* ── Slide counter (top-right) ──────────────────────────── */
+    #slide-num {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.75rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      z-index: 100;
+      font-family: var(--mono);
+    }
+
+    /* ── Navigation ─────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.45rem 1rem;
+      z-index: 100;
+    }
+    .nav button {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 6px;
+      transition: background 0.15s;
+      line-height: 1;
+    }
+    .nav button:hover:not(:disabled) { background: var(--card); }
+    .nav button:disabled { color: var(--border); cursor: default; }
+    #progress {
+      font-size: 0.8rem;
+      color: var(--muted);
+      min-width: 52px;
+      text-align: center;
+      font-family: var(--mono);
+    }
+
+    /* ── Typography ─────────────────────────────────────────── */
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 800; line-height: 1.1; }
+    h2 { font-size: clamp(1.4rem, 2.8vw, 2rem); font-weight: 700; margin-bottom: 1.25rem; }
+    h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.6rem; }
+    p  { color: var(--muted); line-height: 1.7; }
+    a  { color: var(--orange); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .accent  { color: var(--orange); }
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--orange);
+      margin-bottom: 0.4rem;
+    }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      color: var(--muted);
+      margin: 0.75rem 0 1.75rem;
+      font-weight: 400;
+    }
+
+    /* ── Badges ─────────────────────────────────────────────── */
+    .badges { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+    .badge {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.3rem 0.85rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .badge.orange { border-color: var(--orange); color: var(--orange); }
+    .badge.blue   { border-color: var(--blue);   color: var(--blue); }
+    .badge.green  { border-color: var(--green);  color: var(--green); }
+
+    /* ── Metrics hero ───────────────────────────────────────── */
+    .metric { font-size: 2.4rem; font-weight: 800; color: var(--orange); line-height: 1; }
+    .metric-label { font-size: 0.82rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* ── Divider ────────────────────────────────────────────── */
+    .divider { width: 100%; height: 1px; background: var(--border); margin: 1.1rem 0; }
+
+    /* ── Bullet list ────────────────────────────────────────── */
+    .bullets { list-style: none; display: flex; flex-direction: column; gap: 0.7rem; }
+    .bullets li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.7rem;
+      font-size: 0.95rem;
+      line-height: 1.55;
+    }
+    .bullets li .icon { flex-shrink: 0; font-size: 1rem; margin-top: 0.1rem; }
+
+    /* ── Grids ──────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.35rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+
+    /* ── Card ───────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem 1.35rem;
+    }
+    .card.orange-border { border-color: var(--orange); }
+    .card.green-border  { border-color: var(--green); }
+    .card.red-border    { border-color: var(--red); }
+    .card.blue-border   { border-color: var(--blue); }
+
+    /* ── Code blocks ────────────────────────────────────────── */
+    pre {
+      background: #010409;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.1rem 1.35rem;
+      overflow-x: auto;
+      overflow-y: auto;
+      max-height: 52vh;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      line-height: 1.7;
+      tab-size: 2;
+    }
+    code { font-family: var(--mono); font-size: 0.85em; }
+
+    /* ── Syntax highlight tokens ────────────────────────────── */
+    .kw   { color: #ff7b72; }            /* keywords: import, const, if, return… */
+    .fn   { color: #d2a8ff; }            /* functions / method calls              */
+    .str  { color: #a5d6ff; }            /* string literals                       */
+    .cm   { color: #6e7681; font-style: italic; } /* comments                     */
+    .num  { color: #79c0ff; }            /* numbers                               */
+    .cls  { color: #ffa657; }            /* classes / types                       */
+    .prop { color: #79c0ff; }            /* object properties                     */
+    .var  { color: #e6edf3; }            /* variables                             */
+
+    /* ── Problem highlight ──────────────────────────────────── */
+    .problem {
+      background: rgba(255, 123, 114, 0.07);
+      border-left: 3px solid var(--red);
+      border-radius: 0 8px 8px 0;
+      padding: 0.55rem 1rem;
+      margin-bottom: 0.65rem;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: #ffb3ae;
+    }
+    .problem-label {
+      font-size: 0.68rem;
+      color: var(--red);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.2rem;
+    }
+
+    /* ── Table ──────────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th {
+      background: var(--card);
+      color: var(--text);
+      font-weight: 600;
+      padding: 0.65rem 1rem;
+      text-align: left;
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td:first-child { color: var(--text); font-weight: 500; }
+    td.bad  { color: var(--red); }
+    td.good { color: var(--green); }
+    td.ok   { color: var(--yellow); }
+
+    /* ── ASCII / folder tree ────────────────────────────────── */
+    .ascii {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.55;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1.25rem;
+      white-space: pre;
+    }
+    .tree {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      line-height: 1.95;
+      color: var(--muted);
+    }
+    .tree .dir  { color: var(--blue); }
+    .tree .file { color: var(--text); }
+    .tree .ann  { color: #484f58; }
+
+    /* ── Benchmark bars ─────────────────────────────────────── */
+    .bench { display: flex; flex-direction: column; gap: 0.65rem; }
+    .bench-row { display: flex; align-items: center; gap: 0.7rem; font-size: 0.82rem; }
+    .bench-label { width: 110px; flex-shrink: 0; color: var(--muted); }
+    .bench-label.hl { color: var(--orange); font-weight: 700; }
+    .bench-bar-wrap { flex: 1; background: var(--card); border-radius: 9999px; height: 7px; overflow: hidden; }
+    .bench-bar { height: 100%; border-radius: 9999px; background: var(--muted); }
+    .bench-bar.hl { background: var(--orange); }
+    .bench-val { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); width: 105px; flex-shrink: 0; text-align: right; }
+    .bench-val.hl { color: var(--orange); font-weight: 700; }
+
+    /* ── Quote ──────────────────────────────────────────────── */
+    .quote {
+      border-left: 3px solid var(--orange);
+      padding-left: 1.2rem;
+      font-size: 1.15rem;
+      font-style: italic;
+      color: var(--muted);
+      margin: 1.25rem 0;
+    }
+    .quote strong { color: var(--text); font-style: normal; }
+
+    /* ── Takeaway box ───────────────────────────────────────── */
+    .takeaway {
+      background: linear-gradient(135deg, rgba(249,115,22,0.12), rgba(249,115,22,0.04));
+      border: 1px solid rgba(249,115,22,0.35);
+      border-radius: 12px;
+      padding: 1.1rem 1.5rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--orange-l);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    /* ── Column labels (compare) ────────────────────────────── */
+    .col-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.35rem;
+      padding-left: 0.2rem;
+    }
+    .col-label.bad  { color: var(--red); }
+    .col-label.good { color: var(--green); }
+
+    /* ── Inline term tooltips ───────────────────────────────── */
+    .term {
+      border-bottom: 1.5px dashed rgba(249,115,22,0.55);
+      cursor: help;
+    }
+
+    /* ── Glossary button ────────────────────────────────────── */
+    #glossary-btn {
+      position: fixed;
+      bottom: 1.3rem;
+      left: 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 0.42rem 0.9rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      cursor: pointer;
+      z-index: 100;
+      font-family: var(--font);
+      transition: border-color 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    #glossary-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+    /* ── Glossary modal ─────────────────────────────────────── */
+    #glossary-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(1,4,9,0.82);
+      backdrop-filter: blur(4px);
+      z-index: 400;
+      align-items: center;
+      justify-content: center;
+    }
+    #glossary-overlay.open { display: flex; }
+    #glossary-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem 2rem 1.5rem;
+      width: 100%;
+      max-width: 730px;
+      max-height: 82vh;
+      overflow-y: auto;
+      position: relative;
+      animation: fadeIn 0.2s ease;
+    }
+    #glossary-close {
+      position: absolute;
+      top: 1rem;
+      right: 1.25rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.3rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #glossary-close:hover { color: var(--text); }
+    .glossary-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+    .glossary-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+      line-height: 1.55;
+    }
+    .glossary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+    .glossary-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem 1rem;
+    }
+    .glossary-term {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--orange);
+      font-family: var(--mono);
+      margin-bottom: 0.2rem;
+    }
+    .glossary-def {
+      font-size: 0.79rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Top progress bar -->
+<div id="top-bar" style="width: 6.67%"></div>
+
+<!-- Slide counter -->
+<div id="slide-num">1 / 15</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 01 — CAPA                                            -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide active" id="slide-1">
+  <div class="slide-inner">
+    <div style="margin-bottom: 0.9rem;">
+      <span class="badge orange">Tech Talk · 2026</span>
+    </div>
+    <h1>Hono <span style="display:inline-block; animation: flicker 2.5s ease-in-out infinite;">🔥</span></h1>
+    <p class="hero-sub">
+      O framework <strong style="color:var(--text)">ultrarrápido</strong> para a
+      <strong style="color:var(--text)">Web moderna</strong>
+    </p>
+
+    <div class="badges" style="margin-bottom: 2rem;">
+      <span class="badge orange">Cloudflare Workers</span>
+      <span class="badge blue">Bun</span>
+      <span class="badge blue">Deno</span>
+      <span class="badge green">Node.js</span>
+      <span class="badge">Vercel</span>
+      <span class="badge">AWS Lambda</span>
+      <span class="badge">Fastly Compute</span>
+      <span class="badge">Netlify</span>
+    </div>
+
+    <div style="display: flex; gap: 2.5rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1.75rem;">
+      <div>
+        <div class="metric">402K</div>
+        <div class="metric-label">ops/seg no Cloudflare Workers</div>
+      </div>
+      <div>
+        <div class="metric">&lt;14kB</div>
+        <div class="metric-label">bundle minificado (hono/tiny)</div>
+      </div>
+      <div>
+        <div class="metric">0</div>
+        <div class="metric-label">dependências externas</div>
+      </div>
+      <div>
+        <div class="metric">8+</div>
+        <div class="metric-label">runtimes suportados</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <p style="font-size: 0.82rem;">
+      Referência oficial:
+      <a href="https://hono.dev">hono.dev</a>
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 02 — EDGE COMPUTING                                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-2">
+  <div class="slide-inner">
+    <div class="section-label">Contexto</div>
+    <h2>O que é <span class="accent">Edge Computing</span></h2>
+
+    <div class="grid-2" style="align-items: start;">
+      <div>
+        <div class="ascii">MODELO TRADICIONAL
+───────────────────────────────
+  [Usuário SP 🇧🇷]
+       │
+       │  ~180ms (round-trip)
+       │
+  [Servidor único — Virginia 🇺🇸]
+       │
+  [Banco de dados]
+
+  ▸ Toda requisição cruza o oceano.
+  ▸ Um ponto de falha para todos.</div>
+        <br/>
+        <div class="ascii">EDGE COMPUTING
+───────────────────────────────
+  [Usuário SP 🇧🇷] ── [Edge Brasil  ] ─┐
+  [Usuário DE 🇩🇪] ── [Edge Alemanha] ─┼─ [Origin]
+  [Usuário JP 🇯🇵] ── [Edge Japão   ] ─┘
+
+  ▸ Código roda PERTO do usuário.
+  ▸ ~10ms de latência.
+  ▸ Sem servidor dedicado.</div>
+      </div>
+
+      <div>
+        <ul class="bullets">
+          <li>
+            <span class="icon">⚡</span>
+            <div>
+              <strong>Latência mínima</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Código executa no nó mais próximo — 10–30ms vs 150–300ms no modelo centralizado.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🌍</span>
+            <div>
+              <strong>Escala global automática</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Sem configurar instâncias por região. A rede distribui automaticamente em centenas de <span class="term" data-tip="PoP = Point of Presence. São os servidores distribuídos pelo mundo onde o código edge é executado. A Cloudflare tem mais de 310 PoPs globalmente.">PoPs</span>.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">💰</span>
+            <div>
+              <strong>Pay-per-request</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Cloudflare Workers cobra por 100k requisições — não por hora de <span class="term" data-tip="VM (Virtual Machine): servidor virtual que fica ligado 24h/dia, gerando custo mesmo sem receber requisições. No pay-per-request você paga só pelo que usa.">VM</span> idle.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🔒</span>
+            <div>
+              <strong>Alta resiliência</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Sem <span class="term" data-tip="Single Point of Failure: ponto único de falha. Componente que, se cair, derruba todo o sistema. Em arquiteturas distribuídas isso é eliminado com redundância.">single point of failure</span>. Uma região sai do ar, as outras assumem.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🚀</span>
+            <div>
+              <strong><span class="term" data-tip="Cold start: tempo de inicialização de uma função serverless inativa. No AWS Lambda pode ser 300ms–1s+. No Edge com V8 Isolates é praticamente zero.">Cold start</span> negligenciável</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Workers isolados por <span class="term" data-tip="V8 Isolates: contextos de execução isolados do motor JavaScript V8 (o mesmo do Chrome). Muito mais leves que containers — inicializam em microssegundos com memória mínima.">V8 Isolates</span> inicializam em microssegundos — não em segundos como Lambda.
+              </span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 03 — PROBLEMA DO MODELO TRADICIONAL                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-3">
+  <div class="slide-inner">
+    <div class="section-label">O problema</div>
+    <h2>Modelo tradicional: <span class="accent">as dores reais</span></h2>
+
+    <div class="grid-3" style="margin-bottom: 1.25rem;">
+      <div class="card red-border">
+        <h3 style="color:var(--red);">🐌 Latência geográfica</h3>
+        <p style="font-size:0.88rem">
+          Servidor em Virginia, usuário no Brasil → 180ms só de <span class="term" data-tip="Round-trip (RTT): tempo total de ida e volta de uma requisição — do cliente ao servidor e de volta. Quanto maior a distância geográfica, maior o RTT.">round-trip</span>.<br/><br/>
+          Cada 100ms a mais reduz conversão em até <strong style="color:var(--text)">7%</strong>.
+        </p>
+      </div>
+      <div class="card red-border">
+        <h3 style="color:var(--red);">📍 Single region</h3>
+        <p style="font-size:0.88rem">
+          Tudo em uma região. Se cair, <strong style="color:var(--text)">tudo cai</strong>.<br/><br/>
+          Escalar geograficamente = replicar infra × N regiões.
+        </p>
+      </div>
+      <div class="card red-border">
+        <h3 style="color:var(--red);">❄️ <span class="term" data-tip="Cold start: tempo de boot de uma função serverless inativa. No AWS Lambda com Node.js pode ser 300ms–1s+ no primeiro hit após período sem uso.">Cold starts</span> pesados</h3>
+        <p style="font-size:0.88rem">
+          AWS Lambda com Node.js: 300ms–1s+ no primeiro hit após inatividade.<br/><br/>
+          Usuário sente e abandona.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>💸 Custo de escala vertical</h3>
+        <p style="font-size:0.88rem">
+          VMs rodam 24/7 mesmo com tráfego zero. Escalabilidade horizontal
+          = mais servidores + LB + auto-scaling groups = mais custo + mais complexidade.
+        </p>
+      </div>
+      <div class="card">
+        <h3>⚙️ Complexidade operacional</h3>
+        <p style="font-size:0.88rem">
+          Load balancer, <span class="term" data-tip="CDN (Content Delivery Network): rede de servidores espalhados pelo mundo para entregar conteúdo de forma mais rápida, próxima ao usuário.">CDN</span>, health checks, auto-scaling, deploys por região…
+          tudo isso só para manter um servidor disponível globalmente.
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="takeaway">
+      💡 Edge Computing resolve tudo isso executando seu código
+      <strong>na rede de distribuição global</strong> — perto do usuário, sem servidor para gerenciar.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 04 — O QUE É O HONO                                  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-4">
+  <div class="slide-inner">
+    <div class="section-label">Apresentando</div>
+    <h2>O que é o <span class="accent">Hono</span> 🔥</h2>
+
+    <div class="grid-2" style="align-items: start;">
+      <div>
+        <ul class="bullets" style="margin-bottom: 1.1rem;">
+          <li>
+            <span class="icon" style="color:var(--orange)">炎</span>
+            <div>
+              <strong>"Hono" = chama (炎) em japonês</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Framework web pequeno, simples e ultrarrápido construído sobre
+                <strong style="color:var(--text)">Web Standards</strong>. Criado por Yusuke Wada em 2022.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🪶</span>
+            <div>
+              <strong>&lt;14kB minificado, zero dependências</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Usa apenas APIs nativas da Web: <code>Request</code>, <code>Response</code>, <code>URL</code>, <code>Headers</code>.
+                Express tem 572kB com dependências.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🌍</span>
+            <div>
+              <strong>Multi-runtime — mesmo código, 8+ plataformas</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Cloudflare Workers, Bun, Deno, Node.js, Vercel, AWS Lambda, Fastly, Netlify.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🚀</span>
+            <div>
+              <strong><span class="term" data-tip="RegExpRouter: roteador do Hono baseado em expressões regulares. Compila todas as rotas em uma única Regexp antes do primeiro dispatch — sem loops lineares, extremamente rápido.">RegExpRouter</span> — o router mais rápido do JS</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Compila todas as rotas em uma única Regexp antes do primeiro dispatch — sem loops lineares.
+              </span>
+            </div>
+          </li>
+        </ul>
+
+        <pre><code><span class="kw">import</span> { <span class="cls">Hono</span> } <span class="kw">from</span> <span class="str">'hono'</span>
+
+<span class="kw">const</span> <span class="var">app</span> = <span class="kw">new</span> <span class="cls">Hono</span>()
+
+<span class="var">app</span>.<span class="fn">get</span>(<span class="str">'/'</span>, (<span class="var">c</span>) => <span class="var">c</span>.<span class="fn">text</span>(<span class="str">'Hello Hono!'</span>))
+
+<span class="kw">export default</span> <span class="var">app</span></code></pre>
+      </div>
+
+      <div>
+        <div class="section-label" style="margin-bottom: 0.3rem;">Benchmark — Cloudflare Workers (ops/seg)</div>
+        <p style="font-size:0.75rem; color:var(--muted); margin-bottom:0.75rem;">
+          Comparação entre <strong style="color:var(--text)">frameworks concorrentes</strong> que também rodam no Cloudflare Workers — todos fazem a mesma coisa (roteamento HTTP), mas com velocidades diferentes.
+        </p>
+        <div class="bench">
+          <div class="bench-row">
+            <div class="bench-label hl">Hono</div>
+            <div class="bench-bar-wrap"><div class="bench-bar hl" style="width:100%"></div></div>
+            <div class="bench-val hl">402,820 ✓</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-label" title="sunder: framework minimalista para Cloudflare Workers">sunder <span style="font-size:0.65rem;color:var(--border)">▸ fw</span></div>
+            <div class="bench-bar-wrap"><div class="bench-bar" style="width:73%"></div></div>
+            <div class="bench-val">297,036</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-label" title="itty-router: router ultra-leve para Workers">itty-router <span style="font-size:0.65rem;color:var(--border)">▸ fw</span></div>
+            <div class="bench-bar-wrap"><div class="bench-bar" style="width:52%"></div></div>
+            <div class="bench-val">212,598</div>
+          </div>
+          <div class="bench-row">
+            <div class="bench-label" title="worktop: framework com API inspirada no Express para Workers">worktop <span style="font-size:0.65rem;color:var(--border)">▸ fw</span></div>
+            <div class="bench-bar-wrap"><div class="bench-bar" style="width:49%"></div></div>
+            <div class="bench-val">197,345</div>
+          </div>
+        </div>
+        <p style="font-size:0.72rem; margin-top:0.65rem; color:var(--muted);">
+          Todos são frameworks para edge. O Hono é o mais rápido entre eles. &nbsp;·&nbsp; Fonte: <a href="https://hono.dev/docs/concepts/benchmarks">hono.dev/docs/concepts/benchmarks</a>
+        </p>
+
+        <div class="divider"></div>
+
+        <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+          <div class="card" style="flex:1; min-width:120px; text-align:center;">
+            <div class="metric" style="font-size:1.75rem;">&lt;14kB</div>
+            <div class="metric-label">vs Express 572kB</div>
+          </div>
+          <div class="card" style="flex:1; min-width:120px; text-align:center;">
+            <div class="metric" style="font-size:1.75rem;">MIT</div>
+            <div class="metric-label">licença — open source</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 05 — POR QUE USAR HONO                               -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-5">
+  <div class="slide-inner">
+    <div class="section-label">Motivação</div>
+    <h2>Por que usar <span class="accent">Hono</span>?</h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.25rem;">
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Express</th>
+              <th>Hono</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Roda em Edge</td><td class="bad">❌ Não</td><td class="good">✅ Sim</td></tr>
+            <tr><td>Bundle size</td><td class="bad">572kB</td><td class="good">&lt;14kB</td></tr>
+            <tr><td>TypeScript nativo</td><td class="ok">⚠️ @types externo</td><td class="good">✅ Built-in</td></tr>
+            <tr><td>Zero dependências</td><td class="bad">❌</td><td class="good">✅</td></tr>
+            <tr><td>Web Standards</td><td class="bad">❌ API própria</td><td class="good">✅ Request/Response</td></tr>
+            <tr><td>Multi-runtime</td><td class="bad">❌ Node.js only</td><td class="good">✅ 8+ runtimes</td></tr>
+            <tr><td>Middleware builtin</td><td class="ok">⚠️ Parcial</td><td class="good">✅ CORS, JWT, Logger…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <ul class="bullets" style="margin-bottom: 1rem;">
+          <li>
+            <span class="icon">🔋</span>
+            <div>
+              <strong>Batteries Included</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                CORS, JWT, Bearer Auth, Logger, ETag, Compress, Cache,
+                Secure Headers, Pretty JSON — tudo sem instalar nada extra.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">😃</span>
+            <div>
+              <strong>Developer Experience de primeira classe</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Parâmetros de rota com tipos literais automáticos.
+                Body, query e params 100% tipados sem <span class="term" data-tip="Boilerplate: código repetitivo que você escreve sempre igual, sem agregar valor à lógica. Ex: definir 'Content-Type: application/json' em toda rota manualmente.">boilerplate</span>.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon">🏢</span>
+            <div>
+              <strong>Usado em produção por</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Cloudflare D1, Cloudflare Workers KV, Unkey,
+                OpenStatus, Clerk, cdnjs.
+              </span>
+            </div>
+          </li>
+        </ul>
+        <pre style="max-height:105px;"><code><span class="cm">// Adicionar CORS + Logger em 3 linhas</span>
+<span class="kw">import</span> { <span class="fn">cors</span> }   <span class="kw">from</span> <span class="str">'hono/cors'</span>
+<span class="kw">import</span> { <span class="fn">logger</span> } <span class="kw">from</span> <span class="str">'hono/logger'</span>
+
+<span class="var">app</span>.<span class="fn">use</span>(<span class="fn">cors</span>(), <span class="fn">logger</span>())</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 06 — CRUD COM EXPRESS: GET + POST                    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-6">
+  <div class="slide-inner">
+    <div class="section-label">Express — parte 1 de 2</div>
+    <h2>CRUD com <span class="accent">Express</span> — GET + POST</h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.1rem;">
+      <div>
+        <div class="col-label bad" style="margin-bottom:0.3rem;">Express (Node.js)</div>
+        <pre style="margin:0; max-height:56vh;"><code><span class="cm">// server.js</span>
+<span class="kw">const</span> <span class="var">express</span> = <span class="fn">require</span>(<span class="str">'express'</span>)
+<span class="kw">const</span> <span class="var">app</span>     = <span class="fn">express</span>()
+
+<span class="cm">// Precisa declarar middleware para ler JSON</span>
+<span class="var">app</span>.<span class="fn">use</span>(<span class="var">express</span>.<span class="fn">json</span>())
+
+<span class="kw">let</span> <span class="var">users</span>  = [
+  { <span class="prop">id</span>: <span class="num">1</span>, <span class="prop">name</span>: <span class="str">'Alice'</span>, <span class="prop">email</span>: <span class="str">'alice@example.com'</span> },
+  { <span class="prop">id</span>: <span class="num">2</span>, <span class="prop">name</span>: <span class="str">'Bob'</span>,   <span class="prop">email</span>: <span class="str">'bob@example.com'</span>   },
+]
+<span class="kw">let</span> <span class="var">nextId</span> = <span class="num">3</span>
+
+<span class="cm">// GET /users</span>
+<span class="var">app</span>.<span class="fn">get</span>(<span class="str">'/users'</span>, (<span class="var">req</span>, <span class="var">res</span>) => {
+  <span class="var">res</span>.<span class="fn">json</span>(<span class="var">users</span>)        <span class="cm">// res.json() funciona bem</span>
+})
+
+<span class="cm">// POST /users</span>
+<span class="var">app</span>.<span class="fn">post</span>(<span class="str">'/users'</span>, (<span class="var">req</span>, <span class="var">res</span>) => {
+  <span class="kw">const</span> { <span class="var">name</span>, <span class="var">email</span> } = <span class="var">req</span>.<span class="prop">body</span>  <span class="cm">// body já parseado</span>
+  <span class="kw">if</span> (!<span class="var">name</span> || !<span class="var">email</span>) {
+    <span class="kw">return</span> <span class="var">res</span>.<span class="fn">status</span>(<span class="num">400</span>).<span class="fn">json</span>({
+      <span class="prop">error</span>: <span class="str">'name and email are required'</span>
+    })
+  }
+  <span class="kw">const</span> <span class="var">user</span> = { <span class="prop">id</span>: <span class="var">nextId</span>++, <span class="var">name</span>, <span class="var">email</span> }
+  <span class="var">users</span>.<span class="fn">push</span>(<span class="var">user</span>)
+  <span class="var">res</span>.<span class="fn">status</span>(<span class="num">201</span>).<span class="fn">json</span>(<span class="var">user</span>)
+})
+
+<span class="var">app</span>.<span class="fn">listen</span>(<span class="num">3000</span>) <span class="cm">// ❌ Não roda em edge</span></code></pre>
+      </div>
+
+      <div>
+        <div class="col-label good" style="margin-bottom:0.3rem;">Hono (Edge / Multi-runtime)</div>
+        <pre style="margin:0; max-height:56vh;"><code><span class="cm">// src/index.ts</span>
+<span class="kw">import</span> { <span class="cls">Hono</span> } <span class="kw">from</span> <span class="str">'hono'</span>
+
+<span class="kw">const</span> <span class="var">app</span> = <span class="kw">new</span> <span class="cls">Hono</span>()
+
+<span class="cm">// Sem setup extra — Hono já lê JSON nativamente</span>
+
+<span class="kw">let</span> <span class="var">users</span> = [
+  { <span class="prop">id</span>: <span class="num">1</span>, <span class="prop">name</span>: <span class="str">'Alice'</span>, <span class="prop">email</span>: <span class="str">'alice@example.com'</span> },
+  { <span class="prop">id</span>: <span class="num">2</span>, <span class="prop">name</span>: <span class="str">'Bob'</span>,   <span class="prop">email</span>: <span class="str">'bob@example.com'</span>   },
+]
+<span class="kw">let</span> <span class="var">nextId</span> = <span class="num">3</span>
+
+<span class="cm">// GET /users</span>
+<span class="var">app</span>.<span class="fn">get</span>(<span class="str">'/users'</span>, (<span class="var">c</span>) => {
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>(<span class="var">users</span>)  <span class="cm">// ✅ API idêntica ao Express</span>
+})
+
+<span class="cm">// POST /users</span>
+<span class="var">app</span>.<span class="fn">post</span>(<span class="str">'/users'</span>, <span class="kw">async</span> (<span class="var">c</span>) => {
+  <span class="kw">const</span> { <span class="var">name</span>, <span class="var">email</span> } = <span class="kw">await</span> <span class="var">c</span>.<span class="prop">req</span>.<span class="fn">json</span>()
+  <span class="kw">if</span> (!<span class="var">name</span> || !<span class="var">email</span>) {
+    <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>(
+      { <span class="prop">error</span>: <span class="str">'name and email are required'</span> }, <span class="num">400</span>
+    )
+  }
+  <span class="kw">const</span> <span class="var">user</span> = { <span class="prop">id</span>: <span class="var">nextId</span>++, <span class="var">name</span>, <span class="var">email</span> }
+  <span class="var">users</span>.<span class="fn">push</span>(<span class="var">user</span>)
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>(<span class="var">user</span>, <span class="num">201</span>) <span class="cm">// ✅ status como 2º arg</span>
+})
+
+<span class="kw">export default</span> <span class="var">app</span> <span class="cm">// ✅ Roda em Workers, Bun, Deno…</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 07 — CRUD EXPRESS vs HONO: PUT + DELETE              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-7">
+  <div class="slide-inner">
+    <div class="section-label">Express vs Hono — parte 2 de 2</div>
+    <h2>CRUD — <span class="accent">PUT + DELETE</span></h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.1rem;">
+      <div>
+        <div class="col-label bad" style="margin-bottom:0.3rem;">Express (Node.js)</div>
+        <pre style="margin:0; max-height:56vh;"><code><span class="cm">// PUT /users/:id</span>
+<span class="var">app</span>.<span class="fn">put</span>(<span class="str">'/users/:id'</span>, (<span class="var">req</span>, <span class="var">res</span>) => {
+  <span class="kw">const</span> <span class="var">id</span>  = <span class="fn">parseInt</span>(<span class="var">req</span>.<span class="prop">params</span>.<span class="prop">id</span>) <span class="cm">// sem tipagem</span>
+  <span class="kw">const</span> <span class="var">idx</span> = <span class="var">users</span>.<span class="fn">findIndex</span>((<span class="var">u</span>) => <span class="var">u</span>.<span class="prop">id</span> === <span class="var">id</span>)
+
+  <span class="kw">if</span> (<span class="var">idx</span> === <span class="num">-1</span>) {
+    <span class="kw">return</span> <span class="var">res</span>.<span class="fn">status</span>(<span class="num">404</span>).<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Not found'</span> })
+  }
+
+  <span class="var">users</span>[<span class="var">idx</span>] = { ...<span class="var">users</span>[<span class="var">idx</span>], ...<span class="var">req</span>.<span class="prop">body</span> }
+  <span class="var">res</span>.<span class="fn">json</span>(<span class="var">users</span>[<span class="var">idx</span>])
+})
+
+<span class="cm">// DELETE /users/:id</span>
+<span class="var">app</span>.<span class="fn">delete</span>(<span class="str">'/users/:id'</span>, (<span class="var">req</span>, <span class="var">res</span>) => {
+  <span class="kw">const</span> <span class="var">id</span>  = <span class="fn">parseInt</span>(<span class="var">req</span>.<span class="prop">params</span>.<span class="prop">id</span>)
+  <span class="kw">const</span> <span class="var">idx</span> = <span class="var">users</span>.<span class="fn">findIndex</span>((<span class="var">u</span>) => <span class="var">u</span>.<span class="prop">id</span> === <span class="var">id</span>)
+
+  <span class="kw">if</span> (<span class="var">idx</span> === <span class="num">-1</span>) {
+    <span class="kw">return</span> <span class="var">res</span>.<span class="fn">status</span>(<span class="num">404</span>).<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Not found'</span> })
+  }
+
+  <span class="var">users</span>.<span class="fn">splice</span>(<span class="var">idx</span>, <span class="num">1</span>)
+  <span class="var">res</span>.<span class="fn">status</span>(<span class="num">204</span>).<span class="fn">send</span>()
+})</code></pre>
+      </div>
+
+      <div>
+        <div class="col-label good" style="margin-bottom:0.3rem;">Hono (Edge / Multi-runtime)</div>
+        <pre style="margin:0; max-height:56vh;"><code><span class="cm">// PUT /users/:id</span>
+<span class="var">app</span>.<span class="fn">put</span>(<span class="str">'/users/:id'</span>, <span class="kw">async</span> (<span class="var">c</span>) => {
+  <span class="kw">const</span> <span class="var">id</span>  = <span class="cls">Number</span>(<span class="var">c</span>.<span class="prop">req</span>.<span class="fn">param</span>(<span class="str">'id'</span>)) <span class="cm">// ✅ tipado</span>
+  <span class="kw">const</span> <span class="var">idx</span> = <span class="var">users</span>.<span class="fn">findIndex</span>((<span class="var">u</span>) => <span class="var">u</span>.<span class="prop">id</span> === <span class="var">id</span>)
+
+  <span class="kw">if</span> (<span class="var">idx</span> === <span class="num">-1</span>) {
+    <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Not found'</span> }, <span class="num">404</span>)
+  }
+
+  <span class="kw">const</span> <span class="var">body</span> = <span class="kw">await</span> <span class="var">c</span>.<span class="prop">req</span>.<span class="fn">json</span>()
+  <span class="var">users</span>[<span class="var">idx</span>] = { ...<span class="var">users</span>[<span class="var">idx</span>], ...<span class="var">body</span> }
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>(<span class="var">users</span>[<span class="var">idx</span>])
+})
+
+<span class="cm">// DELETE /users/:id</span>
+<span class="var">app</span>.<span class="fn">delete</span>(<span class="str">'/users/:id'</span>, (<span class="var">c</span>) => {
+  <span class="kw">const</span> <span class="var">id</span>  = <span class="cls">Number</span>(<span class="var">c</span>.<span class="prop">req</span>.<span class="fn">param</span>(<span class="str">'id'</span>))
+  <span class="kw">const</span> <span class="var">idx</span> = <span class="var">users</span>.<span class="fn">findIndex</span>((<span class="var">u</span>) => <span class="var">u</span>.<span class="prop">id</span> === <span class="var">id</span>)
+
+  <span class="kw">if</span> (<span class="var">idx</span> === <span class="num">-1</span>) {
+    <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Not found'</span> }, <span class="num">404</span>)
+  }
+
+  <span class="var">users</span>.<span class="fn">splice</span>(<span class="var">idx</span>, <span class="num">1</span>)
+  <span class="kw">return new</span> <span class="cls">Response</span>(<span class="kw">null</span>, { <span class="prop">status</span>: <span class="num">204</span> })
+})</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 08 — DIFERENÇAS EXPRESSIVAS EXPRESS vs HONO          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-8">
+  <div class="slide-inner">
+    <div class="section-label">Análise comparativa</div>
+    <h2>Express vs Hono: <span class="accent">as diferenças que importam</span></h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.25rem;">
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%">Aspecto</th>
+              <th>Express</th>
+              <th>Hono</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Roda em Edge</td>
+              <td class="bad">❌ Node.js only</td>
+              <td class="good">✅ 8+ runtimes</td>
+            </tr>
+            <tr>
+              <td>Bundle size</td>
+              <td class="bad">572kB + deps</td>
+              <td class="good">&lt;14kB, zero deps</td>
+            </tr>
+            <tr>
+              <td>API de rotas</td>
+              <td class="ok">app.get / res.json</td>
+              <td class="good">app.get / c.json ✅</td>
+            </tr>
+            <tr>
+              <td>Parse de body JSON</td>
+              <td class="bad">express.json() manual</td>
+              <td class="good">Automático no contexto</td>
+            </tr>
+            <tr>
+              <td>TypeScript nativo</td>
+              <td class="bad">@types separado</td>
+              <td class="good">Built-in, inferência total</td>
+            </tr>
+            <tr>
+              <td>Performance (ops/s)</td>
+              <td class="bad">~15k (Node.js)</td>
+              <td class="good">402k (Workers)</td>
+            </tr>
+            <tr>
+              <td>Cold start</td>
+              <td class="bad">200ms+ (processo Node)</td>
+              <td class="good">~0ms (V8 Isolates)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="card blue-border" style="margin-bottom:1rem;">
+          <h3 style="color:var(--blue); margin-bottom:0.5rem;">🤝 O que é <em>igual</em></h3>
+          <ul class="bullets" style="gap:0.45rem;">
+            <li><span class="icon" style="color:var(--green)">✅</span><div style="font-size:0.88rem;">Sintaxe de roteamento: <code>app.get()</code>, <code>app.post()</code>…</div></li>
+            <li><span class="icon" style="color:var(--green)">✅</span><div style="font-size:0.88rem;">Resposta JSON com <code>.json(data)</code></div></li>
+            <li><span class="icon" style="color:var(--green)">✅</span><div style="font-size:0.88rem;">Parâmetros de rota com <code>:id</code></div></li>
+            <li><span class="icon" style="color:var(--green)">✅</span><div style="font-size:0.88rem;">Middleware com <code>app.use()</code></div></li>
+          </ul>
+        </div>
+
+        <div class="card red-border">
+          <h3 style="color:var(--red); margin-bottom:0.5rem;">⚡ O que é <em>diferente</em></h3>
+          <ul class="bullets" style="gap:0.45rem;">
+            <li><span class="icon" style="color:var(--red)">❌</span><div style="font-size:0.88rem;">Express usa <code>(req, res)</code> — Hono usa <code>(c)</code> como contexto único</div></li>
+            <li><span class="icon" style="color:var(--red)">❌</span><div style="font-size:0.88rem;">Express não roda em Cloudflare Workers nem Bun</div></li>
+            <li><span class="icon" style="color:var(--red)">❌</span><div style="font-size:0.88rem;">Express precisa de <code>express.json()</code> para ler body — Hono não</div></li>
+          </ul>
+        </div>
+
+        <div class="takeaway" style="margin-top:1rem; font-size:0.88rem;">
+          💡 Se você já sabe Express, aprender Hono é questão de
+          <strong>horas</strong> — a lógica é a mesma, a diferença é onde roda.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 09 — O QUE É MIDDLEWARE                              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-9">
+  <div class="slide-inner">
+    <div class="section-label">Conceito fundamental</div>
+    <h2>O que é <span class="accent">Middleware</span>?</h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.5rem;">
+
+      <!-- Coluna esquerda: analogia + fluxo visual -->
+      <div>
+        <div class="card blue-border" style="margin-bottom: 1rem;">
+          <h3 style="color: var(--blue); margin-bottom: 0.5rem;">💡 Analogia simples</h3>
+          <p style="font-size: 0.9rem; color: var(--text); line-height: 1.7;">
+            Imagine o porteiro de um prédio corporativo.<br/>
+            Toda visita (requisição) que chega, <strong>passa pelo porteiro primeiro</strong>
+            — ele verifica o crachá, anota no livro e só então deixa entrar.<br/><br/>
+            Middleware é exatamente isso: <strong>código que roda antes (e/ou depois) do seu handler</strong>,
+            sem que o handler precise saber que ele existe.
+          </p>
+        </div>
+
+        <!-- Fluxo visual -->
+        <div class="section-label" style="margin-bottom: 0.5rem;">Fluxo de uma requisição</div>
+        <div style="display: flex; flex-direction: column; gap: 0.35rem;">
+          <div style="display:flex; align-items:center; gap:0.7rem;">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.82rem;white-space:nowrap;">📱 Cliente</div>
+            <div style="color:var(--muted); font-size:0.9rem;">──── requisição chega ────▶</div>
+          </div>
+          <div style="margin-left:0.5rem; display:flex; flex-direction:column; gap:0.3rem;">
+            <div style="display:flex;align-items:center;gap:0.6rem;">
+              <div style="width:3px;background:var(--blue);align-self:stretch;border-radius:9999px;"></div>
+              <div style="background:rgba(88,166,255,0.1);border:1px solid var(--blue);border-radius:8px;padding:0.45rem 1rem;font-size:0.82rem;flex:1;">
+                🔒 <strong style="color:var(--blue)">Middleware: Auth</strong>
+                <span style="color:var(--muted);"> — tem token? se não: 401 Unauthorized</span>
+              </div>
+            </div>
+            <div style="margin-left:1rem;color:var(--muted);font-size:0.78rem;">✓ token válido → segue</div>
+            <div style="display:flex;align-items:center;gap:0.6rem;">
+              <div style="width:3px;background:var(--yellow);align-self:stretch;border-radius:9999px;"></div>
+              <div style="background:rgba(227,179,65,0.08);border:1px solid var(--yellow);border-radius:8px;padding:0.45rem 1rem;font-size:0.82rem;flex:1;">
+                📝 <strong style="color:var(--yellow)">Middleware: Logger</strong>
+                <span style="color:var(--muted);"> — registra a requisição no log</span>
+              </div>
+            </div>
+            <div style="margin-left:1rem;color:var(--muted);font-size:0.78rem;">✓ registrado → segue</div>
+            <div style="display:flex;align-items:center;gap:0.6rem;">
+              <div style="width:3px;background:var(--green);align-self:stretch;border-radius:9999px;"></div>
+              <div style="background:rgba(63,185,80,0.1);border:1px solid var(--green);border-radius:8px;padding:0.45rem 1rem;font-size:0.82rem;flex:1;">
+                🎯 <strong style="color:var(--green)">Route Handler</strong>
+                <span style="color:var(--muted);"> — finalmente executa a lógica</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.7rem;margin-top:0.15rem;">
+            <div style="color:var(--muted);font-size:0.9rem;">◀──── resposta volta ────</div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.9rem;font-size:0.82rem;white-space:nowrap;">📱 Cliente</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna direita: código -->
+      <div>
+        <div class="section-label" style="margin-bottom: 0.5rem;">Como escrever um Middleware no Hono</div>
+        <pre><code><span class="cm">// Um middleware é uma função com 2 argumentos:
+// c = contexto da requisição
+// next = função que chama o próximo passo</span>
+
+<span class="kw">const</span> <span class="var">authMiddleware</span> = <span class="kw">async</span> (<span class="var">c</span>, <span class="var">next</span>) => {
+  <span class="kw">const</span> <span class="var">token</span> = <span class="var">c</span>.<span class="prop">req</span>.<span class="fn">header</span>(<span class="str">'Authorization'</span>)
+
+  <span class="kw">if</span> (!<span class="var">token</span>) {
+    <span class="cm">// ❌ Sem token: para aqui, devolve 401</span>
+    <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Sem autorização'</span> }, <span class="num">401</span>)
+  }
+
+  <span class="cm">// ✅ Com token: chama o próximo (handler ou middleware)</span>
+  <span class="kw">await</span> <span class="fn">next</span>()
+}
+
+<span class="cm">// Aplicar apenas nas rotas /admin/*</span>
+<span class="var">app</span>.<span class="fn">use</span>(<span class="str">'/admin/*'</span>, <span class="var">authMiddleware</span>)
+
+<span class="var">app</span>.<span class="fn">get</span>(<span class="str">'/admin/users'</span>, (<span class="var">c</span>) => {
+  <span class="cm">// Só chega aqui se o token for válido!</span>
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">users</span>: [] })
+})</code></pre>
+
+        <div class="divider"></div>
+
+        <ul class="bullets" style="gap: 0.5rem;">
+          <li>
+            <span class="icon" style="color:var(--blue)">🔑</span>
+            <div style="font-size:0.88rem;">
+              <strong>Auth</strong> — bloqueia quem não tem permissão
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--yellow)">📝</span>
+            <div style="font-size:0.88rem;">
+              <strong>Logger</strong> — anota cada requisição que chegou
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--green)">🌐</span>
+            <div style="font-size:0.88rem;">
+              <strong>CORS</strong> — libera (ou bloqueia) origens externas
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--orange)">🛡️</span>
+            <div style="font-size:0.88rem;">
+              <strong>Secure Headers</strong> — adiciona cabeçalhos de segurança automaticamente
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 12b — ARQUITETURA RECOMENDADA                        -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-10">
+  <div class="slide-inner">
+    <div class="section-label">Arquitetura</div>
+    <h2>Estrutura <span class="accent">recomendada</span> de projeto</h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.5rem;">
+
+      <!-- Coluna esquerda: folder tree -->
+      <div>
+        <div class="section-label" style="margin-bottom: 0.5rem;">Organização de pastas</div>
+        <pre style="max-height: none; padding: 0.9rem 1.25rem; margin-bottom: 1rem;"><code style="font-size:0.82rem;"><span class="dir">src/</span>
+├── <span class="file">index.ts</span>           <span class="cm">← Liga tudo: registra rotas</span>
+│
+├── <span class="dir">routes/</span>            <span class="cm">← Rotas HTTP (GET, POST…)</span>
+│   ├── <span class="file">users.ts</span>
+│   └── <span class="file">auth.ts</span>
+│
+├── <span class="dir">services/</span>          <span class="cm">← Lógica de negócio</span>
+│   └── <span class="file">userService.ts</span>
+│
+├── <span class="dir">middleware/</span>        <span class="cm">← Middlewares customizados</span>
+│   └── <span class="file">authMiddleware.ts</span>
+│
+└── <span class="dir">types/</span>             <span class="cm">← Tipos TypeScript</span>
+    └── <span class="file">index.ts</span></code></pre>
+
+        <div class="takeaway" style="font-size:0.88rem; font-weight:500;">
+          💡 Cada pasta tem <strong>uma responsabilidade só</strong>.<br/>
+          Rotas não sabem do banco. Services não sabem do HTTP.<br/>
+          Middleware não sabe da lógica de negócio.
+        </div>
+      </div>
+
+      <!-- Coluna direita: fluxo em camadas + exemplo de app.route -->
+      <div>
+        <div class="section-label" style="margin-bottom: 0.5rem;">Camadas da aplicação</div>
+        <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+          <div class="card" style="border-color:var(--blue); padding: 0.6rem 1rem;">
+            <strong style="color:var(--blue); font-size:0.88rem;">🌐 Routes</strong>
+            <span style="color:var(--muted); font-size:0.82rem;"> — recebe HTTP, chama o Service, devolve JSON</span>
+          </div>
+          <div style="text-align:center; color:var(--muted); font-size:0.8rem;">▼ chama</div>
+          <div class="card" style="border-color:var(--orange); padding: 0.6rem 1rem;">
+            <strong style="color:var(--orange); font-size:0.88rem;">⚙️ Services</strong>
+            <span style="color:var(--muted); font-size:0.82rem;"> — regras de negócio, validações, lógica</span>
+          </div>
+          <div style="text-align:center; color:var(--muted); font-size:0.8rem;">▼ acessa</div>
+          <div class="card" style="border-color:var(--green); padding: 0.6rem 1rem;">
+            <strong style="color:var(--green); font-size:0.88rem;">🗄️ Data Layer</strong>
+            <span style="color:var(--muted); font-size:0.82rem;"> — banco de dados, KV Store, APIs externas</span>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-bottom: 0.5rem;">Exemplo: registrando rotas no index.ts</div>
+        <pre style="max-height: 18vh;"><code><span class="kw">import</span> { <span class="cls">Hono</span> } <span class="kw">from</span> <span class="str">'hono'</span>
+<span class="kw">import</span> <span class="var">users</span> <span class="kw">from</span> <span class="str">'./routes/users'</span>
+<span class="kw">import</span> <span class="var">auth</span>  <span class="kw">from</span> <span class="str">'./routes/auth'</span>
+
+<span class="kw">const</span> <span class="var">app</span> = <span class="kw">new</span> <span class="cls">Hono</span>()
+
+<span class="var">app</span>.<span class="fn">route</span>(<span class="str">'/users'</span>, <span class="var">users</span>) <span class="cm">// Registra /users/*</span>
+<span class="var">app</span>.<span class="fn">route</span>(<span class="str">'/auth'</span>,  <span class="var">auth</span>)  <span class="cm">// Registra /auth/*</span>
+
+<span class="kw">export default</span> <span class="var">app</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 13 — BOAS PRÁTICAS                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-11">
+  <div class="slide-inner">
+    <div class="section-label">Boas práticas</div>
+    <h2>Usando Hono do <span class="accent">jeito certo</span></h2>
+
+    <div class="grid-2" style="align-items: start; gap: 1.25rem;">
+      <div>
+        <pre style="max-height:44vh;"><code><span class="cm">// ✅ Middleware global — roda em todas as rotas</span>
+<span class="var">app</span>.<span class="fn">use</span>(<span class="str">'*'</span>, <span class="fn">cors</span>())
+<span class="var">app</span>.<span class="fn">use</span>(<span class="str">'*'</span>, <span class="fn">logger</span>())
+<span class="var">app</span>.<span class="fn">use</span>(<span class="str">'*'</span>, <span class="fn">secureHeaders</span>())
+
+<span class="cm">// ✅ Middleware por rota — só onde precisa</span>
+<span class="var">app</span>.<span class="fn">use</span>(<span class="str">'/admin/*'</span>, <span class="fn">bearerAuth</span>({ <span class="prop">token</span>: <span class="var">env</span>.<span class="prop">TOKEN</span> }))
+
+<span class="cm">// ✅ Validação com Zod — nunca confie nos dados!</span>
+<span class="kw">import</span> { <span class="fn">zValidator</span> } <span class="kw">from</span> <span class="str">'@hono/zod-validator'</span>
+<span class="kw">import</span> { <span class="var">z</span> }          <span class="kw">from</span> <span class="str">'zod'</span>
+
+<span class="kw">const</span> <span class="var">userSchema</span> = <span class="var">z</span>.<span class="fn">object</span>({
+  <span class="prop">name</span>:  <span class="var">z</span>.<span class="fn">string</span>().<span class="fn">min</span>(<span class="num">1</span>),
+  <span class="prop">email</span>: <span class="var">z</span>.<span class="fn">string</span>().<span class="fn">email</span>(),
+})
+
+<span class="var">app</span>.<span class="fn">post</span>(<span class="str">'/users'</span>, <span class="fn">zValidator</span>(<span class="str">'json'</span>, <span class="var">userSchema</span>), <span class="kw">async</span> (<span class="var">c</span>) => {
+  <span class="kw">const</span> <span class="var">body</span> = <span class="var">c</span>.<span class="prop">req</span>.<span class="fn">valid</span>(<span class="str">'json'</span>) <span class="cm">// 100% tipado ✅</span>
+  <span class="cm">// body.name e body.email já validados</span>
+})
+
+<span class="cm">// ✅ Error handler global — não deixe erros vazarem</span>
+<span class="var">app</span>.<span class="fn">onError</span>((<span class="var">err</span>, <span class="var">c</span>) => {
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">error</span>: <span class="var">err</span>.<span class="prop">message</span> }, <span class="num">500</span>)
+})
+
+<span class="cm">// ✅ Not Found handler centralizado</span>
+<span class="var">app</span>.<span class="fn">notFound</span>((<span class="var">c</span>) => {
+  <span class="kw">return</span> <span class="var">c</span>.<span class="fn">json</span>({ <span class="prop">error</span>: <span class="str">'Route not found'</span> }, <span class="num">404</span>)
+})</code></pre>
+      </div>
+
+      <div>
+        <ul class="bullets">
+          <li>
+            <span class="icon" style="color:var(--green)">✅</span>
+            <div>
+              <strong>Valide na entrada com Zod</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Use <code>@hono/zod-validator</code> para validar body,
+                params e query antes do handler. Jamais confie nos dados do cliente.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--green)">✅</span>
+            <div>
+              <strong>Middleware separado por responsabilidade</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Global para CORS/logging, específico para autenticação.
+                Não misture preocupações no mesmo middleware.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--green)">✅</span>
+            <div>
+              <strong>Um arquivo de rotas por domínio</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                <code>users.ts</code>, <code>products.ts</code>, <code>orders.ts</code>.
+                O <code>index.ts</code> só monta — não implementa.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--yellow)">⚠️</span>
+            <div>
+              <strong>Não reinvente o middleware</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                CORS, JWT, Logger, ETag já existem no Hono.
+                Só crie middleware custom quando houver necessidade real.
+              </span>
+            </div>
+          </li>
+          <li>
+            <span class="icon" style="color:var(--yellow)">⚠️</span>
+            <div>
+              <strong>Evite overengineering cedo</strong><br/>
+              <span style="color:var(--muted);font-size:0.88rem">
+                Para projeto simples, um arquivo único está OK.
+                Modularize quando o time e a complexidade exigirem de verdade.
+              </span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 14 — QUANDO USAR / NÃO USAR                          -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-12">
+  <div class="slide-inner">
+    <div class="section-label">Decisão técnica</div>
+    <h2>Quando <span class="accent">usar</span> e quando <span style="color:var(--red)">evitar</span></h2>
+
+    <div class="grid-2" style="align-items: start;">
+      <div class="card green-border">
+        <h3 style="color:var(--green); margin-bottom:1rem;">✅ Use Hono quando...</h3>
+        <ul class="bullets">
+          <li>
+            <span class="icon">🚀</span>
+            <div>Você quer uma <strong>API REST ou RPC leve</strong> rodando no Edge
+              (Cloudflare Workers, Bun, Deno)</div>
+          </li>
+          <li>
+            <span class="icon">🔌</span>
+            <div>Construindo um <strong><span class="term" data-tip="BFF (Backend for Frontend): camada de backend criada para servir um frontend específico. Agrega dados de múltiplos serviços em um único endpoint otimizado para a tela.">BFF</span> (Backend for Frontend)</strong> — camada fina
+              que agrega dados de múltiplos serviços</div>
+          </li>
+          <li>
+            <span class="icon">🧩</span>
+            <div><strong>Proxy ou gateway</strong> na frente de uma CDN
+              ou de uma API monolítica</div>
+          </li>
+          <li>
+            <span class="icon">📦</span>
+            <div>Projeto com <strong>bundle crítico</strong> — Workers têm
+              limite de 1MB no Cloudflare</div>
+          </li>
+          <li>
+            <span class="icon">🔑</span>
+            <div>Time que usa <strong>TypeScript</strong> e quer <span class="term" data-tip="DX (Developer Experience): experiência do desenvolvedor ao usar uma ferramenta. Boa DX = menos código repetitivo, erros detectados no editor e APIs intuitivas.">DX</span> moderna
+              sem abrir mão de performance</div>
+          </li>
+          <li>
+            <span class="icon">🌐</span>
+            <div><strong>Full-stack com JSX</strong> — Hono suporta <span class="term" data-tip="SSR (Server-Side Rendering): o HTML da página é gerado no servidor antes de ser enviado ao navegador. Melhora performance inicial e SEO.">SSR</span> com
+              componentes JSX no servidor</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card red-border">
+        <h3 style="color:var(--red); margin-bottom:1rem;">❌ Evite Hono quando...</h3>
+        <ul class="bullets">
+          <li>
+            <span class="icon">💾</span>
+            <div>Sua aplicação usa <strong><span class="term" data-tip="ORM (Object-Relational Mapping): biblioteca que mapeia objetos do código a tabelas do banco de dados. Ex: Prisma, TypeORM. Muitos não funcionam em ambientes edge.">ORMs</span> com drivers nativos</strong> como Prisma —
+              incompatíveis com runtimes de edge</div>
+          </li>
+          <li>
+            <span class="icon">🧠</span>
+            <div>Você precisa de <strong>estado em memória persistente</strong> entre
+              requisições — Workers são <span class="term" data-tip="Stateless (sem estado): cada requisição é independente. O servidor não guarda nenhuma informação entre chamadas — base da escalabilidade no edge.">stateless</span> por design</div>
+          </li>
+          <li>
+            <span class="icon">📁</span>
+            <div><strong>Upload/download de arquivos grandes</strong> — Workers têm
+              timeout de 30s e memória limitada (~128MB)</div>
+          </li>
+          <li>
+            <span class="icon">🐘</span>
+            <div>Time já usa <strong>NestJS ou Express consolidado</strong>
+              com ecossistema de plugins e decoradores próprios</div>
+          </li>
+          <li>
+            <span class="icon">⏱️</span>
+            <div>Processamento <strong>CPU-intensivo ou de longa duração</strong>
+              — edge não é o ambiente certo para isso</div>
+          </li>
+        </ul>
+
+        <div class="divider" style="margin:1rem 0;"></div>
+        <p style="font-size:0.83rem;">
+          💡 Combine: <strong style="color:var(--text)">Hono no Edge</strong>
+          para a camada de API + <strong style="color:var(--text)">serviço dedicado</strong>
+          (Node.js, Go) para processamento interno pesado.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- SLIDE 15 — CONCLUSÃO                                       -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+<section class="slide" id="slide-13">
+  <div class="slide-inner">
+    <div class="section-label">Conclusão</div>
+    <h2>Resumo e <span class="accent">takeaways</span></h2>
+
+    <div class="grid-3" style="margin-bottom: 1.4rem;">
+      <div class="card orange-border">
+        <h3 style="color:var(--orange);">🌍 Edge First</h3>
+        <p style="font-size:0.88rem;">
+          O futuro das APIs leves está no Edge. Latência mínima,
+          escala automática e custo por uso — sem servidor para gerenciar.
+        </p>
+      </div>
+      <div class="card orange-border">
+        <h3 style="color:var(--orange);">🔥 Hono = produtividade</h3>
+        <p style="font-size:0.88rem;">
+          Menos <span class="term" data-tip="Boilerplate: código repetitivo que você escreve sempre igual, sem agregar valor à lógica. Ex: definir 'Content-Type: application/json' em toda rota manualmente.">boilerplate</span>, intenção mais clara. O mesmo código roda
+          em 8+ runtimes. Middleware, validação e tipos inclusos.
+        </p>
+      </div>
+      <div class="card orange-border">
+        <h3 style="color:var(--orange);">🏗️ Arquitetura importa</h3>
+        <p style="font-size:0.88rem;">
+          Com o framework escolhido, aplique as camadas certas:
+          routes → services → data. Não coloque tudo no handler.
+        </p>
+      </div>
+    </div>
+
+    <div class="quote">
+      <strong>"Fast, but not only fast."</strong><br/>
+      Hono não é só rápido — é simples, portável e feito para a web moderna.
+    </div>
+
+    <div class="grid-2" style="margin-top: 1rem;">
+      <div>
+        <div class="section-label" style="margin-bottom:0.5rem;">Para explorar agora</div>
+        <ul class="bullets" style="gap:0.5rem;">
+          <li>
+            <span class="icon">📖</span>
+            <div>
+              <a href="https://hono.dev/docs">hono.dev/docs</a>
+              — documentação oficial completa
+            </div>
+          </li>
+          <li>
+            <span class="icon">⚡</span>
+            <div>
+              <code style="color:var(--text); font-size:0.85rem;">npm create hono@latest</code>
+              — starter em 30 segundos
+            </div>
+          </li>
+          <li>
+            <span class="icon">🧪</span>
+            <div>
+              <a href="https://hono.dev/examples">hono.dev/examples</a>
+              — exemplos reais de uso
+            </div>
+          </li>
+          <li>
+            <span class="icon">🐙</span>
+            <div>
+              <a href="https://github.com/honojs/hono">github.com/honojs/hono</a>
+              — código-fonte aberto
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="takeaway">
+        O melhor framework é aquele que<br/>
+        <strong>não te atrapalha</strong> — Hono é esse framework. 🔥
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<nav class="nav">
+  <button id="btn-prev" title="Anterior (←)" onclick="goTo(current - 1)">&#8592;</button>
+  <span id="progress">1 / 15</span>
+  <button id="btn-next" title="Próximo (→)" onclick="goTo(current + 1)">&#8594;</button>
+</nav>
+
+<script>
+  var current = 0;
+  var slides  = document.querySelectorAll('.slide');
+  var total   = slides.length;
+
+  function goTo(n) {
+    if (n < 0 || n >= total) return;
+    slides[current].classList.remove('active');
+    current = n;
+    slides[current].classList.add('active');
+    document.getElementById('progress').textContent  = (current + 1) + ' / ' + total;
+    document.getElementById('slide-num').textContent = (current + 1) + ' / ' + total;
+    document.getElementById('top-bar').style.width   = ((current + 1) / total * 100) + '%';
+    document.getElementById('btn-prev').disabled = current === 0;
+    document.getElementById('btn-next').disabled = current === total - 1;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (document.getElementById('glossary-overlay').classList.contains('open')) {
+      if (e.key === 'Escape') closeGlossary();
+      return;
+    }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  goTo(0);
+
+  function openGlossary()  { document.getElementById('glossary-overlay').classList.add('open'); }
+  function closeGlossary() { document.getElementById('glossary-overlay').classList.remove('open'); }
+
+  // JS tooltip — evita clipping por overflow:hidden nos slides
+  var tip = document.createElement('div');
+  tip.style.cssText = 'position:fixed;display:none;background:#1c2128;border:1px solid rgba(249,115,22,0.55);border-radius:8px;padding:0.5rem 0.85rem;font-size:0.76rem;color:#e6edf3;max-width:260px;line-height:1.55;z-index:600;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.55);font-family:Inter,system-ui,sans-serif;';
+  document.body.appendChild(tip);
+
+  document.addEventListener('mouseover', function(e) {
+    var el = e.target.closest && e.target.closest('.term');
+    if (!el) return;
+    tip.textContent = el.getAttribute('data-tip');
+    tip.style.display = 'block';
+    moveTip(e);
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (tip.style.display === 'none') return;
+    if (!e.target.closest || !e.target.closest('.term')) { tip.style.display = 'none'; return; }
+    moveTip(e);
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('.term')) {
+      tip.style.display = 'none';
+    }
+  });
+  function moveTip(e) {
+    var x = e.clientX + 14, y = e.clientY - 55;
+    if (x + 272 > window.innerWidth) x = e.clientX - 272;
+    if (y < 8) y = e.clientY + 18;
+    tip.style.left = x + 'px';
+    tip.style.top  = y + 'px';
+  }
+</script>
+
+<!-- ── Glossary button ──────────────────────────────────────── -->
+<button id="glossary-btn" onclick="openGlossary()" title="Glossário de termos técnicos">
+  📖 Glossário
+</button>
+
+<!-- ── Glossary modal ───────────────────────────────────────── -->
+<div id="glossary-overlay" onclick="if(event.target===this)closeGlossary()">
+  <div id="glossary-panel">
+    <button id="glossary-close" onclick="closeGlossary()">✕</button>
+    <div class="glossary-title">📖 Glossário de Termos Técnicos</div>
+    <div class="glossary-sub">
+      Passe o mouse sobre palavras com <span style="border-bottom:1.5px dashed rgba(249,115,22,0.7)">sublinhado pontilhado</span> nos slides para ver a definição rápida.
+      Ou consulte todos os termos aqui — ESC ou clique fora para fechar.
+    </div>
+    <div class="glossary-grid">
+      <div class="glossary-item">
+        <div class="glossary-term">Edge Computing</div>
+        <div class="glossary-def">Executar código em servidores distribuídos globalmente, próximos ao usuário, ao invés de em um datacenter central único. Reduz latência drasticamente.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">PoP (Point of Presence)</div>
+        <div class="glossary-def">Ponto de Presença: servidor ou datacenter distribuído geograficamente. A Cloudflare tem mais de 310 PoPs ao redor do mundo.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">CDN</div>
+        <div class="glossary-def">Content Delivery Network: rede de servidores espalhados pelo mundo para entregar conteúdo de forma mais rápida, próxima ao usuário final.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Cold Start</div>
+        <div class="glossary-def">Tempo de inicialização de uma função serverless inativa. No AWS Lambda pode ser 300ms–1s+. No Edge com V8 Isolates é quase zero.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">V8 Isolates</div>
+        <div class="glossary-def">Contextos de execução isolados do motor JavaScript V8 (o mesmo do Chrome). Muito mais leves que containers — inicializam em microssegundos.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Single Point of Failure</div>
+        <div class="glossary-def">Ponto único de falha: componente que, se cair, derruba todo o sistema. Em arquiteturas distribuídas, isso é eliminado com redundância.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">VM (Virtual Machine)</div>
+        <div class="glossary-def">Máquina Virtual: servidor virtual que emula um computador completo. Fica rodando 24h/dia, gerando custo mesmo sem receber requisições.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Round-trip (RTT)</div>
+        <div class="glossary-def">Tempo de ida e volta de uma requisição — do cliente ao servidor e de volta. Quanto maior a distância geográfica, maior o RTT.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Runtime</div>
+        <div class="glossary-def">Ambiente de execução de um programa. Ex: Node.js é um runtime para JavaScript. Cada runtime tem suas próprias APIs e limitações.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Bundle</div>
+        <div class="glossary-def">Arquivo único gerado ao empacotar o código-fonte para distribuição. Bundle menor = menos dados = carregamento mais rápido.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">RegExpRouter</div>
+        <div class="glossary-def">Roteador do Hono baseado em expressões regulares. Compila todas as rotas em uma única Regexp antes do primeiro dispatch — extremamente rápido.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Middleware</div>
+        <div class="glossary-def">Código executado entre a requisição e a resposta. Ex: verificar autenticação antes de processar uma rota protegida.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">CORS</div>
+        <div class="glossary-def">Cross-Origin Resource Sharing: mecanismo de segurança dos navegadores que controla quais domínios podem acessar sua API.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">JWT</div>
+        <div class="glossary-def">JSON Web Token: token de autenticação com informações do usuário codificadas e assinadas digitalmente — sem precisar de sessão no servidor.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">ETag</div>
+        <div class="glossary-def">Entity Tag: identificador de versão de um recurso HTTP. Permite que o navegador saiba se o conteúdo mudou sem precisar baixá-lo novamente.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">DX (Developer Experience)</div>
+        <div class="glossary-def">Experiência do Desenvolvedor ao usar uma ferramenta. Boa DX = menos código repetitivo, erros detectados no editor e APIs intuitivas.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">BFF (Backend for Frontend)</div>
+        <div class="glossary-def">Camada de backend criada especificamente para servir um frontend. Agrega dados de múltiplos serviços internos em um único endpoint otimizado para a tela.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">SSR (Server-Side Rendering)</div>
+        <div class="glossary-def">Renderização no Servidor: o HTML da página é gerado no servidor antes de ser enviado ao navegador. Melhora performance inicial e SEO.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">ORM</div>
+        <div class="glossary-def">Object-Relational Mapping: biblioteca que mapeia objetos do código a tabelas do banco de dados. Ex: Prisma, TypeORM. Muitos não funcionam em edge.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Stateless</div>
+        <div class="glossary-def">Sem estado: cada requisição é completamente independente. O servidor não guarda nenhuma informação entre chamadas — base da escalabilidade do edge.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">RPC</div>
+        <div class="glossary-def">Remote Procedure Call: o cliente chama funções no servidor como se fossem locais, com tipagem compartilhada. O Hono suporta modo RPC com Zod.</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Pay-per-request</div>
+        <div class="glossary-def">Modelo de cobrança onde você paga apenas pelas requisições feitas, não pelo tempo que o servidor fica ligado (diferente de VMs que cobram por hora).</div>
+      </div>
+      <div class="glossary-item">
+        <div class="glossary-term">Boilerplate</div>
+        <div class="glossary-def">Código repetitivo e previsível que você escreve sempre igual, sem agregar valor à lógica do sistema. Ex: montar o header "Content-Type: application/json" em toda rota. Frameworks existem para eliminar boilerplate.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

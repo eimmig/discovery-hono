@@ -137,16 +137,24 @@ curl -X DELETE http://localhost:8888/tasks/SEU_ID
 Arquivos principais:
 
 - `netlify/edge-functions/index.ts`
+- `netlify/edge-functions/routes/ui-routes.ts`
+- `netlify/edge-functions/routes/task-routes.ts`
+- `netlify/edge-functions/handlers/task-handlers.ts`
+- `netlify/edge-functions/services/task-service.ts`
+- `netlify/edge-functions/validators/task-validator.ts`
 - `netlify/edge-functions/lib/react-pages.ts`
-- `netlify/edge-functions/lib/task-service.ts`
 - `netlify/edge-functions/lib/http-utils.ts`
 - `netlify.toml`
 
 Organizacao:
 
-- `index.ts`: define as rotas e orquestra chamadas
+- `index.ts`: ponto de entrada; aplica middlewares globais e monta os modulos de rota
+- `routes/ui-routes.ts`: rotas de interface (`/`, `/api`, `/react/tasks`)
+- `routes/task-routes.ts`: rotas REST de tarefas (`/tasks` e `/tasks/:id`)
+- `handlers/task-handlers.ts`: handlers HTTP com fluxo de request/response
+- `services/task-service.ts`: regras de CRUD e armazenamento em memoria
+- `validators/task-validator.ts`: validacao de payload para create/update
 - `lib/react-pages.ts`: centraliza HTML das paginas React de demonstracao
-- `lib/task-service.ts`: concentra regras de CRUD e armazenamento em memoria
 - `lib/http-utils.ts`: funcoes de parse/validacao de request
 
 Fluxo:

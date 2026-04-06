@@ -6,11 +6,6 @@ export type Task = {
   updatedAt: string
 }
 
-export type TaskPayload = {
-  title?: unknown
-  done?: unknown
-}
-
 const tasks = new Map<string, Task>()
 
 export const listTasks = (): Task[] => {
