@@ -984,52 +984,24 @@
 
     <div class="grid-2" style="align-items: start; gap: 1.25rem;">
       <div>
-        <table>
-          <thead>
-            <tr>
-              <th style="width:40%">Aspecto</th>
-              <th>Express</th>
-              <th>Hono</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Roda em Edge</td>
-              <td class="bad">❌ Node.js only</td>
-              <td class="good">✅ 8+ runtimes</td>
-            </tr>
-            <tr>
-              <td>Bundle size</td>
-              <td class="bad">572kB + deps</td>
-              <td class="good">&lt;14kB, zero deps</td>
-            </tr>
-            <tr>
-              <td>API de rotas</td>
-              <td class="ok">app.get / res.json</td>
-              <td class="good">app.get / c.json ✅</td>
-            </tr>
-            <tr>
-              <td>Parse de body JSON</td>
-              <td class="bad">express.json() manual</td>
-              <td class="good">Automático no contexto</td>
-            </tr>
-            <tr>
-              <td>TypeScript nativo</td>
-              <td class="bad">@types separado</td>
-              <td class="good">Built-in, inferência total</td>
-            </tr>
-            <tr>
-              <td>Performance (ops/s)</td>
-              <td class="bad">~15k (Node.js)</td>
-              <td class="good">402k (Workers)</td>
-            </tr>
-            <tr>
-              <td>Cold start</td>
-              <td class="bad">200ms+ (processo Node)</td>
-              <td class="good">~0ms (V8 Isolates)</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="card blue-border" style="margin-bottom:1rem;">
+          <h3 style="color:var(--blue); margin-bottom:0.5rem;">📌 Principais características</h3>
+          <ul class="bullets" style="gap:0.45rem;">
+            <li><span class="icon" style="color:var(--green)">1.</span><div style="font-size:0.88rem;"><strong>Curva de adoção baixa:</strong> quem já conhece Express migra rápido porque a API é muito parecida.</div></li>
+            <li><span class="icon" style="color:var(--green)">2.</span><div style="font-size:0.88rem;"><strong>Ganho estrutural:</strong> o maior salto do Hono não é sintaxe, é o ambiente edge e portabilidade multi-runtime.</div></li>
+            <li><span class="icon" style="color:var(--green)">3.</span><div style="font-size:0.88rem;"><strong>Trade-off real:</strong> você troca ecossistema Node tradicional por baixa latência e footprint mínimo.</div></li>
+          </ul>
+        </div>
+
+        <div class="card" style="margin-bottom:1rem;">
+          <h3 style="margin-bottom:0.5rem;">🧠 Como decidir em 30 segundos</h3>
+          <ul class="bullets" style="gap:0.45rem;">
+            <li><span class="icon">⚡</span><div style="font-size:0.88rem;">Se seu foco é <strong>latência global</strong> e APIs leves, Hono tende a ser a melhor escolha.</div></li>
+            <li><span class="icon">🧱</span><div style="font-size:0.88rem;">Se você depende fortemente de libs Node-only, Express/Nest podem ser mais práticos.</div></li>
+            <li><span class="icon">🔄</span><div style="font-size:0.88rem;">Estratégia comum: <strong>Edge na borda + serviços internos</strong> para workloads pesados.</div></li>
+          </ul>
+        </div>
+
       </div>
 
       <div>
@@ -1482,7 +1454,7 @@
 
     <div class="grid-2" style="margin-top: 1rem;">
       <div>
-        <div class="section-label" style="margin-bottom:0.5rem;">Para explorar agora</div>
+        <div class="section-label" style="margin-bottom:0.5rem;">Próximos passos:</div>
         <ul class="bullets" style="gap:0.5rem;">
           <li>
             <span class="icon">📖</span>
@@ -1515,10 +1487,6 @@
         </ul>
       </div>
 
-      <div class="takeaway">
-        O melhor framework é aquele que<br/>
-        <strong>não te atrapalha</strong> — Hono é esse framework. 🔥
-      </div>
     </div>
   </div>
 </section>
